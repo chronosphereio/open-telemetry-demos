@@ -1,0 +1,18 @@
+{
+  "dependencies": {
+    "@opentelemetry/api": "^1.0.4",
+    "@opentelemetry/auto-instrumentations-node": "^0.27.3",
+    "@opentelemetry/exporter-prometheus": "^0.27.0",
+    "@opentelemetry/metrics": "^0.24.0",
+    "@opentelemetry/sdk-metrics-base": "^0.27.0",
+    "@opentelemetry/sdk-node": "^0.27.0",
+    "@opentelemetry/sdk-trace-base": "^1.0.1",
+    "express": "^4.17.2",
+    "express-prom-bundle": "^6.4.1",
+    "prom-client": "^14.0.1"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}

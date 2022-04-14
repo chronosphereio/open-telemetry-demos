@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ot-express
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ot-express  
+  template:
+    metadata:
+      labels: # labels to select/identify the deployment
+        app: ot-express  
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"  
+    spec:
+      containers: 
+      - name: ot-express 
+        image: ot-express
+        imagePullPolicy: Never
+        ports:
+        - name: express-app
+          containerPort: 3000
+        - name: express-metrics
+          containerPort: 9091
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ot-express
+  labels:
+    app: ot-express
+spec:
+  ports:
+  - name: express-app
+    port: 3000
+    targetPort: express-app
+  - name: express-metrics
+    port: 9091
+    targetPort: express-metrics
+  selector:
+    app: ot-express
+  type: NodePort
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+- apiGroups: [""]
+  resources:
+  - nodes
+  - services
+  - endpoints
+  - pods
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["get"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+- kind: ServiceAccount
+  name: prometheus
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus-cont
+        image: prom/prometheus
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: prom-conf.yml
+        ports:
+        - containerPort: 9090
+      volumes:
+      - name: config-volume
+        configMap:
+          name: prometheus-config
+      serviceAccountName: prometheus
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: prometheus-service
+spec:
+  selector:
+    app: prometheus
+  ports:
+  - name: promui
+    nodePort: 30900
+    protocol: TCP
+    port: 9090
+    targetPort: 9090
+  type: NodePort
